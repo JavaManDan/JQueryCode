@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<style>
+
+body{
+	background-color: rgb(144, 182, 244);
+}
+
+
+
+table,th,td,tr{
+	border: solid black 1px;
+	border-collapse: collapse;
+
+	background-color: lightgrey;
+	text-align: center;
+	margin: auto;
+}
+
+#text {
+	margin: auto;
+	text-align: center;
+	border: solid black 1px;
+	background-color: rgb(158, 162, 168);
+}
+
+p {
+	margin: auto;
+}
+
+h1{
+	margin: auto;
+}
+
+th{
+	height: 60px;
+	background-color: grey;
+}
+
+#pageValue {
+	margin-right: 3px;
+	min-width: 2%;
+	min-height: 2%;
+	
+}
+
+.rating {
+	min-width: 100%;
+	min-height: 100%;
+}
+
+#paginator{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 10%;
+	width: 80%;
+	padding: 1%;
+	
+	margin: auto;
+}
+
+.rating{
+	
+}
+
+label{
+	
+	width: 100px;
+}
+
+#results{
+	height: 100%;
+	width: 200px;
+}
+
+#submit{
+	min-height: 20px;
+	min-width: 100px;
+}
+
+
+.ui-helper-hidden-accessible{
+	display:none;
+}
+
+.ui-menu {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: block;
+	outline: 0;
+}
+
+.form{
+	display: flex;
+	justify-content: center;
+	
+}
+
+
+
+</style>
+
+<title> Medway Hygiene Ratings </title>
+
+
+<script>
+
+
+
+$(document).ready(function(){
+
+
+
+	//get the data for the first page 
+	getPages();
+
+	
+	//task 1.2 the buttons
+	$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php?operation=pages", function(data){
+		var cap = data.pages;
+		var buttons = '';
+		
+		for(i = 0; i < 15; i ++){
+			buttons += '<button class="pageValue">' + (i + 1) + '</button>'; 
+
+		}
+		buttons += '<button class="Next">' + "Next" + '</button>';
+		buttons += '<button class="Prev">' + "Prev" + '</button>';
+		
+		
+		$('#paginator').append(buttons);
+		$('#paginator').on('click','.pageValue', getPageNumber);
+	
+	});
+	
+	function increment(){
+		$();
+	}
+	
+	
+	//task 2.1 total with kitchen is 16
+	$("#tableContent").on('click','.rating',function(){
+		
+		//the grandparent (tr tag)
+		var tdata = $(this).parent().parent().toArray();
+		//child name which is name of premisis e.g. Subway
+		var children = $(tdata[0]).children().toArray();
+		//testing alert the name of food place
+		var name = $(children[0]).html();
+		var postCode = '';
+		var postCodeWeWant = $(children[1]).html();
+		
+		//alert(postCodeWeWant);
+		//alert(name);
+		//get the food place
+		
+		$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php?operation=search&name=" + name ,function(data){
+		//google places keyword
+		
+		
+		
+		var keyword = '';
+		
+		$.each(data, function(index, value){	
+		
+		if(value.postcode != ""|| value.postcode != null){
+		//associative array of ["snodland"] = me6... includes all areas from postcodes in Medway
+		var area = [];
+		area["Rochester"] = "ME1 ME2 ME3";
+		area["Chatham"] = "ME4 ME5";
+		area["Snodland"] = "ME6";
+		area["Gillingham"] = "ME7 ME8";
+		area["Sittingbourne"] = "ME9 ME10";
+		area["Queenborough"] = "ME11";
+		area["Sheerness"] = "ME12";
+		area["Faversham"] = "ME13";
+		area["Maidstone"] = "ME14 ME15 ME16 ME17 ME18";
+		area["West Malling"] = "ME19";
+		area["Aylesford"] = "ME20";
+		
+		//first 3 values area and district e.g. ME1 is Medway, Rochester
+		var currentPostCode = value.postcode.substring(0,4);
+		//if the current post code matches the postcode of the desired premesis
+		if(postCodeWeWant.includes(currentPostCode)){
+			//check where it is in medway used for google places
+			for(var key in area){
+			//if the any of the area postcodes match the one we want
+			if(area[key].includes(currentPostCode)){
+			//google places keyword
+				keyword = key;
+				//if the postcode for the area matchs the we clicked the use this later to change posctcode with town
+				if(postCodeWeWant.includes(value.postcode)){
+					postCode = value.postcode;
+				}
+				//e.g. key word is Gillingham or Rochester etc used incase same name but different location
+			}
+		}
+		}
+		}
+		});
+		
+		//we have the keyword now if previous statements weere succesful
+		//alert(keyword);
+		//alert(name);
+		//alert(postCodeWeWant);
+		//task 2.1
+		//alert("currPostcode :  " + postCode);
+		$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/rating.php?name=" + name, function(data){
+				//alert(data);
+		if(data == "" ){
+			alert("Sorry we could not find any matches");
+			return false;
+		}
+		
+		var goal = postCodeWeWant.replace(postCode, keyword);
+		var condition = true;
+		
+		
+		//you have area incase like subway where 100 high street refers to rochester and gillingham
+		$.each(data, function(index, value){
+		var ratingsName = value.name;
+		
+		var vicinity = value.vicinity;
+		
+		//alert("goal :  " + goal);
+		//alert("curr :  " + vicinity);
+		//if there is one result and the address is included in the google places name
+		if(data.length === 1){
+		//alert(name);
+		//alert(ratingsName);
+		alert(vicinity);
+		alert(postCodeWeWant);
+			if(vicinity.includes(postCodeWeWant)|| ratingsName === name ){
+				alert("Name: " + name + " " +" with address " + value.vicinity  +" " + postCode + " " +" has a rating of :  " +value.rating);
+				condition = false;
+				return false;
+			}
+		}
+		
+		if(name === value.name && vicinity === goal){
+		
+		
+			alert("Name: " + name + " " +" with address " + vicinity  +" " + postCode + " " +" has a rating of :  " +value.rating);
+			//we have found the rating so exit basically a JS break
+			condition = false;
+			return false;
+	
+		}
+		
+		if(vicinity === goal){
+		    alert("reached here");
+			alert("Name: " + name + " " +" with address " + vicinity  +" " + postCode + " " +" has a rating of :  " +value.rating);
+			//we have found the rating so exit basically a JS break
+			condition = false;
+			return false;
+	
+		}
+		
+		
+		
+	
+		});
+		if(condition ){
+			alert("Sorry we could not find any matches for this establishment at the address provided");
+		}
+	
+		});
+	  });
+	});
+	
+	
+	
+
+	$( function(){
+		var tags = [
+		"Burger King",
+		"Subway",
+		"Cargo Bistro",
+		"C&S"
+		];		
+		$("#results").autocomplete({
+			source: tags
+		});	
+		
+			$("#submit").click(function(){
+
+		$("#tableContent").empty();
+		var searchResults = $("#results").val();
+		
+		
+		$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php?operation=search&name=" + searchResults,function(details){
+		if(details.length != 0){
+		
+		//$('.content').children().css("background-color", "green");
+		//array of the table rows contaisn 20 elements
+		var rows = $(".content").toArray();
+		
+		var results = '';
+		
+		//for each of the json results index 0-19 for page get the value name,addressline,hygienerating and ratingdate.
+		$.each(details, function(index, value){
+			//alert(details.length);
+		
+			//add the results to the table
+			results += '<tr >';
+			//name from that index e.g. index 0, page 1 = 2 Red Cakes
+			results += '<td>' + value.name  + '</td>';
+			//address that index e.g. index 0, page 1 = ,
+			results += '<td>' + value.addressLine + '</td>';
+			//ratings that index e.g. index 0, page 1 = 5,
+			results += '<td>' + value.hygieneRating + '</td>';
+			//ratings date that index e.g. index 0, page 1 = 2016-06-29 ,
+			results += '<td>' + value.ratingDate + '</td>';
+			//add the get rating button
+			results += '<td> <button class=rating> Get Rating </button></td>';
+			//close the row
+			results += '</tr>';
+			
+			var addTag = true;
+			
+				$.each(tags, function(index, value){
+					if(value === searchResults){
+					addTag = false;
+					}
+				
+			});
+			
+			if(addTag){
+				tags.push(value.name);
+			}
+			
+				//json format, doens't have to be here but makes code more clear for readers that its using json data
+			}, "json");
+			
+			$('#tableContent').append('<th> Establishmnent Name: </th><th> Address Details: </th><th> Rating: </th><th> Rating Date: </th></th><th> Get Rating: </th>');
+			$('#tableContent').append(results);
+			results = '';
+			}
+			});
+		
+	
+		
+		
+		
+	});
+	
+	});
+	
+
+	
+	
+	
+	
+	
+	
+});
+
+
+
+</script>
+
+<script>
+function getPages(){
+$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php?operation=get&page=1" ,function(details){
+	   
+		//$('.content').children().css("background-color", "green");
+		//array of the table rows contaisn 20 elements
+		//var rows = $(".content").toArray();
+		
+		$('#tableContent').empty();
+		var results = '';
+		//for each of the json results index 0-19 for page get the value name,addressline,hygienerating and ratingdate.
+		$.each(details, function(index, value){
+			//$(rows[index]).children().css("background-color", "grey");
+		
+			//add the results to the table
+			results += '<tr >';
+			//name from that index e.g. index 0, page 1 = 2 Red Cakes
+			results += '<td>' + value.name  + '</td>';
+			//address that index e.g. index 0, page 1 = ,
+			results += '<td>' + value.addressLine + '</td>';
+			//ratings that index e.g. index 0, page 1 = 5,
+			results += '<td>' + value.hygieneRating + '</td>';
+			//ratings date that index e.g. index 0, page 1 = 2016-06-29 ,
+			results += '<td>' + value.ratingDate + '</td>';
+			//add the get rating button
+			results += '<td>' + '<button class=rating> Get Rating </button>' + '</td>';
+			//close the row
+			results += '</tr>';
+			
+		});
+		$('#tableContent').append('<th> Establishmnent Name: </th><th> Address Details: </th><th> Rating: </th><th> Rating Date: </th></th><th> Get Rating: </th>');
+		$('#tableContent').append(results);
+		results = '';
+		//json format, doens't have to be here but makes code more clear for readers that its using json data
+	}, "json");
+}
+
+function getPageNumber(){
+		$.get("https://www.cs.kent.ac.uk/people/staff/sm951/co539/assessment2/hygiene.php?operation=get&page=" + $(this).html() ,function(details){
+			$('#tableContent').empty();
+				//for each of the json results index 0-19 for page get the value name,addressline,hygienerating and ratingdate.
+				$.each(details, function(index, value){
+					
+					//add the results to the table
+					results += '<tr >';
+					//name from that index e.g. index 0, page 1 = 2 Red Cakes
+					results += '<td>' + value.name  + '</td>';
+					//address that index e.g. index 0, page 1 = ,
+					results += '<td>' + value.addressLine + '</td>';
+					//ratings that index e.g. index 0, page 1 = 5,
+					results += '<td>' + value.hygieneRating + '</td>';
+					//ratings date that index e.g. index 0, page 1 = 2016-06-29 ,
+					results += '<td>' + value.ratingDate + '</td>';
+					//add the get rating button
+					results += '<td> <button class=rating> Get Rating </button></td>';
+					//close the row
+					results += '</tr>';
+				
+				});
+				$('#tableContent').append('<th> Establishmnent Name: </th><th> Address Details: </th><th> Rating: </th><th> Rating Date: </th></th><th> Get Rating: </th>');
+				$('#tableContent').append(results);
+				results = '';
+		//json format, doesn't have to be here but makes code more clear for readers that its using json data
+		}, "json");
+	}
+
+</script>
+
+</head>
+<body>
+
+<div id="text">
+<h1> Medway Food Establishment Hygiene Ratings </h1>
+
+
+<p>  
+The website will allow the user to view the hygiene ratings of various medway food premises. <br>
+The paginator can be used to change the page to view further results up to 44 pages of records<br>
+and 20 results per page.
+
+</p>
+<br>
+</div>
+
+<ul id="paginator"> 
+
+</ul>
+
+
+<table id="tableContent">
+
+
+</table>
+
+<br>
+<div class="form">
+	<label for="results"> <p> Business Name  </p></label>
+	<input id="results" >
+	<button id="submit"> Search  </button>
+</div>
+
+
+<br>
+<br>
+<br>
+<br>
+
+
+</body>
+</html>
